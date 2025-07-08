@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.jbeam": "jbeam",
+        "iostream": "cpp"
+    }
+}
