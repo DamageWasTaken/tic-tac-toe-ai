@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "*.jbeam": "jbeam",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "iosfwd": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "vector": "cpp"
     }
 }

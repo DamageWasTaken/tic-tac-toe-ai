@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <list>
 
 // Color, 4 components, R8G8B8A8 (32bit)
 typedef struct Color {
@@ -19,7 +20,9 @@ typedef struct Vector2 {
 
 extern Color BG_COLOR;
 
-extern std::vector<std::vector<int>> WINNING_SETS;
+extern std::vector<std::vector<int>> winningSets;
+
+extern std::vector<std::vector<int>> twoPairs;
 
 void impose_line_n(std::ifstream *file, std::string *line, int n);
 
@@ -35,7 +38,15 @@ struct move{
 };
 
 struct raw_boardstate {
-    std::vector<std::vector<piece>> board = std::vector<std::vector<piece>>(9, std::vector<piece>(9, piece::EMPTY));;
+    std::vector<std::vector<piece>> board = std::vector<std::vector<piece>>(9, std::vector<piece>(9, piece::EMPTY));
     piece turn; 
     short current; 
+};
+
+struct board {
+    std::vector<std::vector<piece>> board = std::vector<std::vector<piece>>(9, std::vector<piece>(9, piece::EMPTY));
+};
+
+struct square {
+    std::vector<piece> square = std::vector<piece>(9, piece::EMPTY);
 };

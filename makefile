@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -g -o main -I src/include/
+	g++ main.cpp src/globals.cpp -g -o main -I src/include/
