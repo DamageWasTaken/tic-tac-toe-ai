@@ -20,9 +20,12 @@ typedef struct Vector2 {
 
 extern Color BG_COLOR;
 
-extern std::vector<std::vector<int>> winningSets;
+extern std::vector<std::vector<int>> horizontalVerticalPairs;
+extern std::vector<std::vector<int>> crossPairs;
+extern std::vector<std::vector<int>> allPairs;
 
-extern std::vector<std::vector<int>> twoPairs;
+extern std::vector<float> fieldBias;
+extern std::vector<float> squareBias;
 
 void impose_line_n(std::ifstream *file, std::string *line, int n);
 
