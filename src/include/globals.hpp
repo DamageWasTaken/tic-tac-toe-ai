@@ -18,6 +18,11 @@ typedef struct Vector2 {
     float y;                // Vector y component
 } Vector2;
 
+typedef struct miniMaxReturn {
+    float evaluation;
+    float bestMove;
+} miniMaxReturn;
+
 extern Color BG_COLOR;
 
 extern std::vector<std::vector<int>> horizontalVerticalPairs;

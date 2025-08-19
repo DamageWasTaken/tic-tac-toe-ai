@@ -4,6 +4,8 @@
 #include <list>
 #include <cmath>
 
+piece player = EMPTY;
+
 board generateRandomBoard() {
     struct board newBoard = {};
     for (int i = 0; i < 9; i++) {
@@ -167,7 +169,130 @@ float evaluateGame(raw_boardstate boardstate)
     return eval;
 }
 
+miniMaxReturn miniMax(raw_boardstate boardstate, int depth, float alpha, float beta) {
+    int bestMove = -1;
+
+    //If boardstate is won, return the evaluation
+    float gameEvaluation = evaluateGame(boardstate);
+    if (depth <= 0 || std::abs(gameEvaluation) > 5000) {
+        return miniMaxReturn{gameEvaluation, static_cast<float>(bestMove)};
+    }
+    if (boardstate.turn == player)
+    {
+        //Player eval
+        float maxEval = -std::numeric_limits<float>::infinity();
+        for (int i = 0; i < 9; i++)
+        {
+            miniMaxReturn eval = {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+            if (boardstate.current == -1)
+            {
+                //Full board eval
+                for (int j = 0; j < 9; j++)
+                {
+                    square subBoard;
+                    subBoard.square = boardstate.board[j];
+                    if (checkWinCondition(subBoard) != 0)
+                    {
+                        continue;
+                    }
+                    if (subBoard.square[j] == piece::EMPTY)
+                    {
+                        boardstate.board[i][j] = boardstate.turn;
+                        boardstate.current = (CROSS == boardstate.turn) ? DOT : CROSS;
+                        eval.evaluation = miniMax(boardstate, depth - 1, alpha, beta).evaluation;
+                        boardstate.board[i][j] = EMPTY;
+                    }
+                    if (eval.evaluation > maxEval) {
+                        maxEval = eval.evaluation;
+                        bestMove = i;
+                    }
+                    alpha = std::max(alpha, eval.evaluation);
+                }
+                if (beta <= alpha) {
+                    break;
+                }
+            } else 
+            {
+                //Square eval
+                if (boardstate.board[boardstate.current][i] == piece::EMPTY)
+                {
+                    boardstate.board[boardstate.current][i] = boardstate.turn;
+                    boardstate.current = (CROSS == boardstate.turn) ? DOT : CROSS;
+                    eval = miniMax(boardstate, depth - 1, alpha, beta);
+                    boardstate.board[boardstate.current][i] = EMPTY;
+                }
+                float blob = eval.evaluation;
+                if (blob > maxEval) {
+                    maxEval = blob;
+                    bestMove = eval.bestMove;
+                }
+                alpha = std::max(alpha, blob);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+        }
+        return miniMaxReturn{maxEval, static_cast<float>(bestMove)};
+    } else {
+        //Opponent eval
+        float minEval = -std::numeric_limits<float>::infinity();
+        for (int i = 0; i < 9; i++)
+        {
+            miniMaxReturn eval = {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+            if (boardstate.current == -1)
+            {
+                //Full board eval
+                for (int j = 0; j < 9; j++)
+                {
+                    square subBoard;
+                    subBoard.square = boardstate.board[j];
+                    if (checkWinCondition(subBoard) != 0)
+                    {
+                        continue;
+                    }
+                    if (subBoard.square[j] == piece::EMPTY)
+                    {
+                        boardstate.board[i][j] = boardstate.turn;
+                        boardstate.current = (CROSS == boardstate.turn) ? DOT : CROSS;
+                        eval.evaluation = miniMax(boardstate, depth - 1, alpha, beta).evaluation;
+                        boardstate.board[i][j] = EMPTY;
+                    }
+                    if (eval.evaluation > minEval) {
+                        minEval = eval.evaluation;
+                        bestMove = i;
+                    }
+                    beta = std::max(beta, eval.evaluation);
+                }
+                if (beta <= alpha) {
+                    break;
+                }
+            } else 
+            {
+                //Square eval
+                if (boardstate.board[boardstate.current][i] == piece::EMPTY)
+                {
+                    boardstate.board[boardstate.current][i] = boardstate.turn;
+                    boardstate.current = (CROSS == boardstate.turn) ? DOT : CROSS;
+                    eval = miniMax(boardstate, depth - 1, alpha, beta);
+                    boardstate.board[boardstate.current][i] = EMPTY;
+                }
+                float blob = eval.evaluation;
+                if (blob > minEval) {
+                    minEval = blob;
+                    bestMove = eval.bestMove;
+                }
+                beta = std::max(beta, blob);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+        }
+        return miniMaxReturn{minEval, static_cast<float>(bestMove)};
+    }
+};
+
 int main() {
+    player = CROSS;
     srand ( time(NULL) );
     struct board generatedBoard = generateRandomBoard();
     struct raw_boardstate boardstate;
