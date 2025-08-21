@@ -3,8 +3,10 @@
 #include "globals.hpp"
 #include <list>
 #include <cmath>
+#include <iterator>
+#include <algorithm>
 
-piece player = EMPTY;
+piece playerPiece = EMPTY;
 
 board generateRandomBoard() {
     struct board newBoard = {};
@@ -57,7 +59,7 @@ int checkWinCondition(square board)
     int checkSum = 1;
     for (int i = 0; i < (allPairs.size()); i++)
     {
-        if (board.square[allPairs[i][0]] + board.square[allPairs[i][1]] + board.square[allPairs[i][2]] == checkSum*3);
+        if (board.square[allPairs[i][0]] + board.square[allPairs[i][1]] + board.square[allPairs[i][2]] == checkSum*3)
         {
             return checkSum;
         }
@@ -66,7 +68,7 @@ int checkWinCondition(square board)
     checkSum = -1;
     for (int i = 0; i < (allPairs.size()); i++)
     {
-        if (board.square[allPairs[i][0]] + board.square[allPairs[i][1]] + board.square[allPairs[i][2]] == checkSum*3);
+        if (board.square[allPairs[i][0]] + board.square[allPairs[i][1]] + board.square[allPairs[i][2]] == checkSum*3)
         {
             return checkSum;
         }
@@ -177,10 +179,13 @@ miniMaxReturn miniMax(raw_boardstate boardstate, int depth, float alpha, float b
     if (depth <= 0 || std::abs(gameEvaluation) > 5000) {
         return miniMaxReturn{gameEvaluation, static_cast<float>(bestMove)};
     }
-    if (boardstate.turn == player)
+    std::cout << "Check 3" << " : " << boardstate.turn << std::endl;
+
+    if (boardstate.turn == playerPiece)
     {
         //Player eval
         float maxEval = -std::numeric_limits<float>::infinity();
+        std::cout << "Check 4" << std::endl;
         for (int i = 0; i < 9; i++)
         {
             miniMaxReturn eval = {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
@@ -291,26 +296,164 @@ miniMaxReturn miniMax(raw_boardstate boardstate, int depth, float alpha, float b
     }
 };
 
+float evaluateMove(raw_boardstate boardstate, int evaluatedMove)
+{
+    float eval = 0;
+    square subBoard;
+    subBoard.square = boardstate.board[evaluatedMove];
+    subBoard.square[evaluatedMove] = (boardstate.turn == CROSS) ? DOT : CROSS;
+
+    //Bias the move
+    eval += fieldBias[evaluatedMove];
+
+    //Blocks
+    for (int i = 0; i < (allPairs.size()); i++)
+    {
+        if (subBoard.square[allPairs[i][0]] + subBoard.square[allPairs[i][1]] + subBoard.square[allPairs[i][2]] == -boardstate.turn*3)
+        {
+            eval += 2;
+            //std::cout << "Block found: " << allPairs[i][0] << ", " << allPairs[i][1] << ", " << allPairs[i][2] << std::endl;
+        }
+        
+    }
+
+    subBoard.square[evaluatedMove] = boardstate.turn;
+
+    //Pairs
+    for (int i = 0; i < allPairs.size(); i++) {
+        if (subBoard.square[allPairs[i][0]] + subBoard.square[allPairs[i][1]] + subBoard.square[allPairs[i][2]] == boardstate.turn*2)
+        {
+            eval += 1;
+            //std::cout << "Pair found: " << allPairs[i][0] << ", " << allPairs[i][1] << ", " << allPairs[i][2] << std::endl;
+        }
+    }
+    //Wins
+    for (int i = 0; i < allPairs.size(); i++) {
+        if (subBoard.square[allPairs[i][0]] + subBoard.square[allPairs[i][1]] + subBoard.square[allPairs[i][2]] == boardstate.turn*3)
+        {
+            eval += 5;
+            //std::cout << "Pair found: " << allPairs[i][0] << ", " << allPairs[i][1] << ", " << allPairs[i][2] << std::endl;
+        }
+    }
+
+    
+    eval += checkWinCondition(subBoard) * boardstate.turn * 15;
+    subBoard.square[evaluatedMove] = piece::EMPTY;
+    return eval;
+}
+
+move El_damache(raw_boardstate boardstate){
+    //Variable declerations
+    playerPiece = boardstate.turn;
+    int bestMove = -1;
+    float bestScore[9] = {-std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()};
+    int availableMoves = 0;
+
+    //Check amount of remaining moves
+    for (int i = 0; i < 9; i++)
+    {
+        square subBoard;
+        subBoard.square = boardstate.board[i];
+        if (checkWinCondition(subBoard) != 0)
+        {
+            continue;
+        }
+        for (int j = 0; j < 9; j++)
+        {
+            if (boardstate.board[i][j] == piece::EMPTY)
+            {
+                availableMoves++;
+            }
+        }
+    }
+
+    std::cout << "Check 1" << " : " << availableMoves << std::endl;
+
+    //If there's no current board, figure out which board to play on
+    if (boardstate.current == -1)
+    {
+        std::cout << "Check 2" << " : " << boardstate.turn << std::endl;
+        miniMaxReturn bestBoard;
+
+        if (availableMoves < 10)
+        {
+            std::cout << "Check 2.1" << std::endl;
+
+            bestBoard = miniMax(boardstate, std::min(4, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+        } else if (availableMoves < 18)
+        {
+            std::cout << "Check 2.2" << std::endl;
+            bestBoard = miniMax(boardstate, std::min(5, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+
+        } else 
+        {
+            std::cout << "Check 2.3" << std::endl;
+            bestBoard = miniMax(boardstate, std::min(6, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+        }
+        boardstate.current = static_cast<int>(bestBoard.bestMove);
+    }
+
+    std::cout << "Check success" << std::endl;
+
+    //Create a default move for if all else fails
+    for (int i = 0; i < 9; i++)
+    {
+        if (boardstate.board[boardstate.current][i] == piece::EMPTY)
+        {
+            bestMove = i;
+            break;
+        }        
+    }
+
+    for (int i = 0; i < 9; i++)
+    {
+        if (boardstate.board[boardstate.current][i] == piece::EMPTY)
+        {
+            bestScore[i] = evaluateMove(boardstate, i) * 45;
+        }
+    }
+    
+    for (int i = 0; i < 9; i++)
+    {
+        square subBoard;
+        subBoard.square = boardstate.board[boardstate.current];
+        if (checkWinCondition(subBoard) == 0)
+        {
+            if (subBoard.square[i] == piece::EMPTY)
+            {
+                boardstate.board[boardstate.current][i] = boardstate.turn;
+                miniMaxReturn bestMove;
+                if (availableMoves < 20)
+                {
+                    bestMove = miniMax(boardstate, std::min(5, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+                } else if (availableMoves < 32)
+                {
+                    bestMove = miniMax(boardstate, std::min(6, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+                } else 
+                {
+                    bestMove = miniMax(boardstate, std::min(7, availableMoves), -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+                }
+                boardstate.board[boardstate.current][i] = piece::EMPTY;
+                bestScore[i] = bestMove.evaluation;
+            }     
+        }
+    }
+
+    bestMove = std::distance(bestScore, std::max_element(bestScore, bestScore + 9));
+
+    return move{boardstate.current, bestMove};
+};
+
 int main() {
-    player = CROSS;
     srand ( time(NULL) );
     struct board generatedBoard = generateRandomBoard();
     struct raw_boardstate boardstate;
     boardstate.board = generatedBoard.board;
     boardstate.turn = CROSS;
-    boardstate.current = 0;
+    //boardstate.current = rand() % 9 - 1;
+    boardstate.current = -1;
     visualizeBoard(generatedBoard);
-    for (int i = 0; i < 9; i++)
-    {
-        //std::cout << "Evaluating subboard " << i << std::endl;
-        evaluateBoard(boardstate);
-        boardstate.current++;
-    }
+    move returnedMove = El_damache(boardstate);
+    std::cout << "AI Move: " << returnedMove.sub << ", " << returnedMove.spot << std::endl;
     return 0;
-};
-
-move El_damache(raw_boardstate boardstate){
-//ai stuff
-
-return move{0,0};
 };
